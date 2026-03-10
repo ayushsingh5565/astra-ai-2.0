@@ -5,7 +5,7 @@ import {
   Activity, ChevronLeft, LayoutGrid, BrainCircuit, 
   Globe, Zap, ScanEye, Wand2, Paperclip, Shield, Skull, Cpu, 
   Volume2, VolumeX, Trash2, Radio, StopCircle, Settings2, ChevronDown,
-  AlertTriangle, CheckCircle2, Flame, Search, ScanLine, Code2, Copy, Check, Download, StopCircle as StopIcon, Gavel
+  AlertTriangle, CheckCircle2, Flame, Search, ScanLine, Code2, Copy, Check, Download, StopCircle as StopIcon, Gavel, MonitorUp, Target
 } from 'lucide-react';
 import { Message, Role, CodeSnippet, Attachment, GenerationMode, AstraMode, VoiceSettings, GroundingMetadata } from '../types';
 import { 
@@ -43,7 +43,7 @@ interface ChatInterfaceProps {
 
 const DEFAULT_VOICE_SETTINGS: VoiceSettings = {
     shield: { pitch: 1.0, rate: 1.0, voiceURI: '' },
-    skull: { pitch: 0.1, rate: 0.6, voiceURI: '' }, // Default Demon
+    skull: { pitch: 0.05, rate: 0.8, voiceURI: '' }, // More aggressive/Deep
     root: { pitch: 0.8, rate: 1.4, voiceURI: '' } // Default Robot
 };
 
@@ -332,18 +332,21 @@ const MessageItem = React.memo(({
     return (
         <motion.div 
             layout="position"
-            initial={{ opacity: 0, y: 20, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
+            initial={{ opacity: 0, y: 30, scale: 0.95, filter: "blur(10px)" }}
+            animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
             transition={{ 
-                duration: 0.4, 
+                duration: 0.5, 
                 ease: [0.23, 1, 0.32, 1] 
             }}
             className={`flex flex-col ${msg.role === Role.USER ? 'items-end' : 'items-start'} gap-1`}
         >
             {/* Message Bubble/Content */}
-            <div className={`max-w-[85%] md:max-w-[70%] group relative ${
+            <motion.div 
+                whileHover={{ scale: 1.01 }}
+                transition={{ duration: 0.2 }}
+                className={`max-w-[85%] md:max-w-[70%] group relative ${
                 msg.role === Role.USER 
-                 ? 'bg-[#2f2f2f] text-white rounded-[24px] px-5 py-3 rounded-br-none' 
+                 ? 'bg-[#2f2f2f] text-white rounded-[24px] px-5 py-3 rounded-br-none shadow-[0_4px_20px_rgba(0,0,0,0.5)]' 
                  : 'bg-transparent text-white px-0 py-0'
             }`}>
                 
@@ -417,7 +420,7 @@ const MessageItem = React.memo(({
                        )
                    )}
                 </div>
-            </div>
+            </motion.div>
 
             {/* Footer Actions (Only for Model) */}
             {msg.role === Role.MODEL && (
@@ -444,6 +447,99 @@ const MessageItem = React.memo(({
     );
 });
 
+// --- EMPTY STATE DASHBOARD COMPONENT ---
+const getSuggestedPrompts = (mode: GenerationMode): { title: string, prompt: string }[] => {
+    switch(mode) {
+        case 'DEEP_THINK': return [
+            { title: "Solve Math", prompt: "Solve a complex math problem step-by-step" },
+            { title: "Explain Concept", prompt: "Explain quantum computing to a 5-year-old" },
+            { title: "Analyze Logic", prompt: "Analyze the Ship of Theseus paradox" },
+            { title: "Write Essay", prompt: "Write a philosophical essay on AI consciousness" }
+        ];
+        case 'ASTRA_CODER': return [
+            { title: "React Component", prompt: "Write a React component for a dashboard" },
+            { title: "Debug Code", prompt: "Help me debug a Python script" },
+            { title: "Explain Docker", prompt: "Explain how Docker works with examples" },
+            { title: "SQL Schema", prompt: "Create a SQL schema for a blog platform" }
+        ];
+        case 'IMAGE_EDIT': return [
+            { title: "Cyberpunk Style", prompt: "Make this image look like a cyberpunk city" },
+            { title: "Remove Background", prompt: "Remove the background from this image" },
+            { title: "Add Object", prompt: "Add a futuristic car to the background" },
+            { title: "Enhance Quality", prompt: "Enhance the quality and lighting of this image" }
+        ];
+        case 'ASTRA_DETECTION': return [
+            { title: "Analyze Image", prompt: "Analyze this image for deepfake artifacts" },
+            { title: "Check Metadata", prompt: "Check the metadata of this image" },
+            { title: "Verify Source", prompt: "Verify if this image is AI-generated" },
+            { title: "Forensic Scan", prompt: "Run a full forensic scan on this photo" }
+        ];
+        default: return [
+            { title: "Capabilities", prompt: "What are your core capabilities?" },
+            { title: "Write Email", prompt: "Help me write a professional email" },
+            { title: "Learn Something", prompt: "Teach me something new today" },
+            { title: "System Status", prompt: "Run a diagnostic on your system status" }
+        ];
+    }
+}
+
+const EmptyStateDashboard = ({ 
+    astraMode, 
+    genMode, 
+    onSelectPrompt 
+}: { 
+    astraMode: AstraMode, 
+    genMode: GenerationMode, 
+    onSelectPrompt: (prompt: string) => void 
+}) => {
+    const prompts = getSuggestedPrompts(genMode);
+    
+    return (
+        <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="flex flex-col items-center justify-center w-full max-w-3xl mx-auto mt-12 sm:mt-24 px-4"
+        >
+            <div className="relative mb-8">
+                <div className="absolute inset-0 bg-astra-blue/20 blur-3xl rounded-full" />
+                <Logo className="w-24 h-24 sm:w-32 sm:h-32 relative z-10" isHackerMode={astraMode === 'root'} />
+            </div>
+            
+            <h2 className={`text-2xl sm:text-3xl font-orbitron font-bold tracking-widest mb-2 text-center ${astraMode === 'root' ? 'text-red-500' : 'text-white'}`}>
+                SYSTEM ONLINE
+            </h2>
+            <p className="text-gray-400 font-mono text-sm mb-12 text-center max-w-md">
+                Awaiting input for protocol: <span className={`font-bold ${astraMode === 'root' ? 'text-red-500' : 'text-astra-blue'}`}>{genMode.replace('_', ' ')}</span>
+            </p>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+                {prompts.map((p, i) => (
+                    <motion.button
+                        key={i}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: 0.4 + (i * 0.1) }}
+                        onClick={() => onSelectPrompt(p.prompt)}
+                        className={`flex flex-col items-start p-4 rounded-xl border text-left transition-all group ${
+                            astraMode === 'root' 
+                            ? 'bg-red-950/20 border-red-900/30 hover:bg-red-900/40 hover:border-red-500/50' 
+                            : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-astra-blue/50'
+                        }`}
+                    >
+                        <span className={`font-orbitron text-xs font-bold mb-1 ${astraMode === 'root' ? 'text-red-400' : 'text-astra-blue'}`}>
+                            {p.title}
+                        </span>
+                        <span className="text-sm text-gray-400 group-hover:text-gray-200 line-clamp-2">
+                            {p.prompt}
+                        </span>
+                    </motion.button>
+                ))}
+            </div>
+        </motion.div>
+    );
+};
+
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -466,6 +562,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
   const [pulseTrigger, setPulseTrigger] = useState<number>(0);
   const [showTribunal, setShowTribunal] = useState(false);
   const [tribunalPrompt, setTribunalPrompt] = useState('');
+  const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   
   const [voiceSettings, setVoiceSettings] = useState<VoiceSettings>(DEFAULT_VOICE_SETTINGS);
 
@@ -601,23 +699,32 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
       }
   }, [messages, isVoiceEnabled, isLoading, astraMode, voiceSettings]);
 
+  useEffect(() => {
+      if (videoRef.current && screenStream) {
+          videoRef.current.srcObject = screenStream;
+      }
+  }, [screenStream]);
+
+  const toggleScreenShare = async () => {
+      if (screenStream) {
+          screenStream.getTracks().forEach(t => t.stop());
+          setScreenStream(null);
+      } else {
+          try {
+              const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+              stream.getVideoTracks()[0].onended = () => {
+                  setScreenStream(null);
+              };
+              setScreenStream(stream);
+          } catch (err) {
+              console.error("Screen share error:", err);
+          }
+      }
+  };
+
   const startFreshSession = (newAstraMode: AstraMode, newGenMode: GenerationMode, intensity: 'normal' | 'nuclear' = skullIntensity) => {
       initializeChat(newGenMode, newAstraMode, undefined, intensity);
-      
-      let greeting = INITIAL_GREETING_SHIELD;
-      if (newAstraMode === 'skull') {
-          greeting = intensity === 'nuclear' 
-            ? "NUCLEAR PROTOCOL ENGAGED. 💀 Taiyaar ho ja, teri barbadi shuru hone wali hai." 
-            : INITIAL_GREETING_SKULL;
-      }
-      if (newAstraMode === 'root') greeting = INITIAL_GREETING_ROOT;
-
-      setMessages([{
-        id: 'init',
-        role: Role.MODEL,
-        text: greeting,
-        timestamp: Date.now()
-      }]);
+      setMessages([]);
   };
 
   const switchProtocol = (newMode: AstraMode, intensity: 'normal' | 'nuclear' = skullIntensity) => {
@@ -736,8 +843,28 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
 
     setMessages(prev => [...prev, userMsg]);
     setInput('');
-    const currentAttachment = attachment;
+    let currentAttachment = attachment;
     setAttachment(null);
+    
+    if (!currentAttachment && screenStream && videoRef.current) {
+        const canvas = document.createElement('canvas');
+        canvas.width = videoRef.current.videoWidth;
+        canvas.height = videoRef.current.videoHeight;
+        const ctx = canvas.getContext('2d');
+        if (ctx && canvas.width > 0 && canvas.height > 0) {
+            ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            currentAttachment = {
+                file: new File([new Blob()], "screen.jpg", { type: "image/jpeg" }),
+                previewUrl: dataUrl,
+                base64: dataUrl.split(',')[1],
+                mimeType: 'image/jpeg'
+            };
+            userMsg.image = dataUrl;
+            setMessages(prev => prev.map(m => m.id === userMsg.id ? { ...m, image: dataUrl } : m));
+        }
+    }
+
     setIsLoading(true);
 
     const modelMsgId = (Date.now() + 1).toString();
@@ -839,7 +966,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
           setIsLiveMode(false);
       } else {
           setIsLiveMode(true);
-          const session = new AstraLiveSession(astraMode);
+          const session = new AstraLiveSession(astraMode, genMode, screenStream);
           session.start(() => {
               setIsLiveMode(false);
               liveSessionRef.current = null;
@@ -851,8 +978,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
   const getModeIcon = (m: GenerationMode) => {
       switch(m) {
           case 'DEEP_THINK': return BrainCircuit;
-          case 'WEB_INTEL': return Globe;
-          case 'SPEED_RUN': return Zap;
           case 'IMAGE_EDIT': return ImageIcon;
           case 'ASTRA_DETECTION': return ScanEye;
           case 'VOICE_DETECTOR': return Volume2;
@@ -874,20 +999,18 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
   const features = [
       { id: 'CHAT', label: 'CORE CHAT', desc: 'Standard Astra Intelligence', icon: Terminal },
       { id: 'DEEP_THINK', label: 'DEEP REASONING', desc: 'Complex Problem Solving (High IQ)', icon: BrainCircuit },
-      { id: 'WEB_INTEL', label: 'WEB INTEL', desc: 'Live Internet Access & Search', icon: Globe },
-      { id: 'SPEED_RUN', label: 'SPEED RUN', desc: 'Lightning Fast Responses', icon: Zap },
       { id: 'IMAGE_EDIT', label: 'VISION EDIT', desc: 'Modify Images via Prompt', icon: ImageIcon },
       { id: 'ASTRA_DETECTION', label: 'AI DETECTOR', desc: 'Forensic Image Analysis', icon: ScanEye },
       { id: 'VOICE_DETECTOR', label: 'VOICE SENTINEL', desc: 'Deepfake Voice Detection', icon: Volume2 },
       { id: 'ASTRA_CODER', label: 'ASTRA CODER', desc: 'Gemini Canvas Style Dev', icon: Code2 }, 
-      { id: 'ASTRA_AGENT', label: 'ASTRA AGENT', desc: 'Remote Task Automation', icon: Cpu },
       { id: 'ASTRA_TRIBUNAL', label: 'THE TRIBUNAL', desc: 'Multi-Agent Debate & Verdict', icon: Gavel },
+      { id: 'ASTRA_AGENT', label: 'ASTRA AGENT', desc: 'Remote Task Automation', icon: Cpu },
   ];
 
   const CurrentModeIcon = getModeIcon(genMode);
 
   return (
-    <div className={`fixed inset-0 z-50 flex flex-col h-[100dvh] w-full overflow-hidden ${getThemeClasses()}`}>
+    <div className={`fixed inset-0 z-50 flex flex-col h-[100dvh] w-full overflow-hidden bg-hex-pattern ${getThemeClasses()}`}>
       
       {/* --- DYNAMIC BACKGROUND --- */}
       <CyberBackground mode={astraMode} isProcessing={isLoading} pulseTrigger={pulseTrigger} />
@@ -896,7 +1019,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
           <>
              <MatrixRain />
              <div className="fixed inset-0 z-0 flex items-center justify-center opacity-20 pointer-events-none animate-pulse">
-                <Logo className="w-[500px] h-[500px]" isHackerMode={true} />
+                <Logo className="w-[300px] h-[300px]" isHackerMode={true} />
              </div>
              <div className="fixed inset-0 bg-red-500/5 z-0 pointer-events-none animate-pulse"></div>
           </>
@@ -907,7 +1030,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
         
         <div className="flex items-center justify-between p-3 relative">
             {/* LEFT: LOGO & BACK */}
-            <div className="flex items-center gap-3 w-1/4">
+            <div className="flex items-center gap-3 flex-1">
                 <button onClick={onBack} className="p-2 hover:bg-white/10 rounded-full transition-colors">
                     <Logo className="w-8 h-8" isHackerMode={astraMode === 'root'} />
                 </button>
@@ -939,7 +1062,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
                                     <span>Select Protocol</span>
                                     <Activity size={12} className="text-astra-blue" />
                                 </div>
-                                <div className="max-h-[60vh] overflow-y-auto custom-scrollbar p-2 space-y-1">
+                                <div className="max-h-[50vh] overflow-y-auto custom-scrollbar p-2 space-y-1">
                                     {features.map((f) => (
                                         <button
                                           key={f.id}
@@ -969,7 +1092,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
             </div>
 
             {/* RIGHT: TOOLS */}
-            <div className="flex items-center justify-end gap-2 w-1/4">
+            <div className="flex items-center justify-end gap-2 flex-1">
                 
                 {/* SKULL INTENSITY TOGGLE */}
                 {astraMode === 'skull' && (
@@ -1013,33 +1136,61 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
       </header>
 
       {/* --- MAIN CHAT AREA --- */}
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-8 scroll-smooth pb-32">
-        <AnimatePresence initial={false}>
-        {messages.map((msg, idx) => (
-          <MessageItem 
-            key={msg.id}
-            msg={msg}
-            astraMode={astraMode}
-            isLast={idx === messages.length - 1}
-            isLoading={isLoading}
-            copiedId={copiedId}
-            speakingMessageId={speakingMessageId}
-            handleCopy={handleCopy}
-            handleSpeakToggle={handleSpeakToggle}
-          />
-        ))}
-        </AnimatePresence>
-        
-        {isLoading && (
-            <div className="flex justify-start">
-               <div className="flex items-center gap-1 h-6 px-1">
-                   <div className="w-1.5 h-1.5 bg-astra-blue rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                   <div className="w-1.5 h-1.5 bg-astra-blue rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                   <div className="w-1.5 h-1.5 bg-astra-blue rounded-full animate-bounce"></div>
-               </div>
-            </div>
-        )}
-        <div ref={messagesEndRef} />
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-8 scroll-smooth pb-32 relative">
+        {/* Background Grid Animation for Chat Area */}
+        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+             <motion.div 
+               animate={{ opacity: [0.02, 0.05, 0.02] }}
+               transition={{ duration: 4, repeat: Infinity }}
+               className="absolute inset-0 bg-[linear-gradient(rgba(0,240,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(0,240,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px]"
+             />
+        </div>
+
+        <div className="relative z-10 space-y-8">
+            <AnimatePresence initial={false}>
+            {messages.length === 0 ? (
+                <EmptyStateDashboard 
+                    astraMode={astraMode} 
+                    genMode={genMode} 
+                    onSelectPrompt={(prompt) => {
+                        setInput(prompt);
+                        // Optional: auto-send
+                        // handleSend(new Event('submit') as any, prompt);
+                    }} 
+                />
+            ) : (
+                messages.map((msg, idx) => (
+                  <MessageItem 
+                    key={msg.id}
+                    msg={msg}
+                    astraMode={astraMode}
+                    isLast={idx === messages.length - 1}
+                    isLoading={isLoading}
+                    copiedId={copiedId}
+                    speakingMessageId={speakingMessageId}
+                    handleCopy={handleCopy}
+                    handleSpeakToggle={handleSpeakToggle}
+                  />
+                ))
+            )}
+            </AnimatePresence>
+            
+            {isLoading && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex justify-start"
+                >
+                   <div className="flex items-center gap-2 h-8 px-4 bg-white/5 rounded-full border border-white/10">
+                       <div className="w-1.5 h-1.5 bg-astra-blue rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                       <div className="w-1.5 h-1.5 bg-astra-blue rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                       <div className="w-1.5 h-1.5 bg-astra-blue rounded-full animate-bounce"></div>
+                       <span className="text-[10px] font-tech text-astra-blue ml-2 tracking-widest">PROCESSING</span>
+                   </div>
+                </motion.div>
+            )}
+            <div ref={messagesEndRef} />
+        </div>
       </main>
 
       {/* --- LIVE VISUALIZER OVERLAY --- */}
@@ -1052,6 +1203,36 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
                 className="absolute bottom-28 left-1/2 -translate-x-1/2 z-[60]"
               >
                   <VoiceVisualizer data={audioData} color={astraMode === 'root' ? "astra-green" : "astra-saffron"} count={24} />
+              </motion.div>
+          )}
+      </AnimatePresence>
+
+      {/* --- SCREEN SHARE PREVIEW --- */}
+      <AnimatePresence>
+          {screenStream && (
+              <motion.div 
+                  initial={{ opacity: 0, scale: 0.9, x: 20 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, x: 20 }}
+                  className="absolute top-24 right-4 z-40 w-32 sm:w-48 aspect-video bg-black rounded-lg border border-astra-blue/50 overflow-hidden shadow-[0_0_15px_rgba(0,240,255,0.2)]"
+              >
+                  <video 
+                      ref={videoRef} 
+                      autoPlay 
+                      playsInline 
+                      muted 
+                      className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-1 left-1 bg-black/60 px-2 py-0.5 rounded text-[8px] text-astra-blue font-orbitron tracking-widest flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                      LIVE SCREEN
+                  </div>
+                  <button 
+                      onClick={toggleScreenShare}
+                      className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-red-500/80 text-white rounded transition-colors"
+                  >
+                      <X size={12} />
+                  </button>
               </motion.div>
           )}
       </AnimatePresence>
@@ -1081,7 +1262,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
              )}
          </AnimatePresence>
 
-         <div className="max-w-4xl mx-auto flex gap-2 sm:gap-3 items-end">
+         <div className="max-w-4xl mx-auto flex flex-wrap gap-2 sm:gap-3 items-end">
             <input 
               type="file" 
               ref={fileInputRef} 
@@ -1090,154 +1271,167 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
               onChange={handleFileSelect}
             />
 
-            {/* PERSONALITY SWITCHER */}
-            <div className="relative" ref={personalityMenuRef}>
-               <Tooltip content="IDENTITY MATRIX" position="top" disabled={personalityMenuOpen}>
-                   <motion.button 
-                      layout
-                      onClick={() => setPersonalityMenuOpen(!personalityMenuOpen)}
-                      className={`p-3 rounded-xl transition-colors border relative overflow-hidden ${
-                          astraMode === 'skull' ? 'border-red-500/50 text-red-500 bg-red-500/10' :
-                          astraMode === 'root' ? 'border-green-500/50 text-green-500 bg-green-500/10' :
-                          'border-white/10 text-astra-blue bg-white/5 hover:bg-white/10'
-                      }`}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                   >
-                       <AnimatePresence mode="wait" initial={false}>
-                           <motion.div
-                               key={astraMode}
-                               initial={{ opacity: 0, scale: 0.5, rotate: -90 }}
-                               animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                               exit={{ opacity: 0, scale: 0.5, rotate: 90 }}
-                               transition={{ duration: 0.2 }}
-                           >
-                               {astraMode === 'shield' && <Shield size={20} />}
-                               {astraMode === 'skull' && <Skull size={20} />}
-                               {astraMode === 'root' && <Terminal size={20} />}
-                           </motion.div>
-                       </AnimatePresence>
-                   </motion.button>
-               </Tooltip>
+            {/* TOOLS CONTAINER */}
+            <div className="flex flex-wrap gap-2 items-center">
+                {/* PERSONALITY SWITCHER */}
+                <div className="relative shrink-0" ref={personalityMenuRef}>
+                   <Tooltip content="IDENTITY MATRIX" position="top" disabled={personalityMenuOpen}>
+                       <motion.button 
+                          layout
+                          onClick={() => setPersonalityMenuOpen(!personalityMenuOpen)}
+                          className={`p-3 rounded-xl transition-colors border relative overflow-hidden ${
+                              astraMode === 'skull' ? 'border-red-500/50 text-red-500 bg-red-500/10' :
+                              astraMode === 'root' ? 'border-green-500/50 text-green-500 bg-green-500/10' :
+                              'border-white/10 text-astra-blue bg-white/5 hover:bg-white/10'
+                          }`}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                       >
+                           <AnimatePresence mode="wait" initial={false}>
+                               <motion.div
+                                   key={astraMode}
+                                   initial={{ opacity: 0, scale: 0.5, rotate: -90 }}
+                                   animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                                   exit={{ opacity: 0, scale: 0.5, rotate: 90 }}
+                                   transition={{ duration: 0.2 }}
+                               >
+                                   {astraMode === 'shield' && <Shield size={20} />}
+                                   {astraMode === 'skull' && <Skull size={20} />}
+                                   {astraMode === 'root' && <Terminal size={20} />}
+                               </motion.div>
+                           </AnimatePresence>
+                       </motion.button>
+                   </Tooltip>
 
-               <AnimatePresence>
-                  {personalityMenuOpen && (
-                      <motion.div 
-                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                         animate={{ opacity: 1, y: -10, scale: 1 }}
-                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                         className="absolute bottom-full left-0 mb-2 w-56 bg-[#0a0a0a] border border-white/20 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(0,240,255,0.8)] z-50 flex flex-col backdrop-blur-xl"
-                      >
-                          <div className="px-4 py-3 text-[10px] text-gray-500 font-orbitron tracking-widest border-b border-white/10 bg-white/5">
-                              PERSONALITY MATRIX
-                          </div>
-                          
-                          <motion.button 
-                             whileHover={{ backgroundColor: "rgba(255,255,255,0.05)", x: 4 }}
-                             onClick={() => { switchProtocol('shield'); setPersonalityMenuOpen(false); }}
-                             className={`flex items-center gap-3 px-4 py-3 transition-colors text-left border-b border-white/5 w-full ${astraMode === 'shield' ? 'text-astra-blue' : 'text-gray-400'}`}
-                          >
-                              <Shield size={16} />
-                              <div className="flex-1">
-                                  <div className="font-bold text-xs">SHIELD</div>
-                                  <div className="text-[10px] opacity-60">Standard Defense</div>
-                              </div>
-                              {astraMode === 'shield' && (
-                                  <motion.div layoutId="active-dot" className="w-1.5 h-1.5 rounded-full bg-astra-blue" />
-                              )}
-                          </motion.button>
-
+                   <AnimatePresence>
+                      {personalityMenuOpen && (
                           <motion.div 
-                             whileHover={{ backgroundColor: "rgba(239, 68, 68, 0.1)", x: 4 }}
-                             onClick={() => { switchProtocol('skull'); setPersonalityMenuOpen(false); }}
-                             className={`flex items-center gap-3 px-4 py-3 transition-colors text-left border-b border-white/5 w-full cursor-pointer ${astraMode === 'skull' ? 'text-red-500' : 'text-gray-400'}`}
+                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                             animate={{ opacity: 1, y: -10, scale: 1 }}
+                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                             className="absolute bottom-full left-0 mb-2 w-56 bg-[#0a0a0a] border border-white/20 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(0,240,255,0.8)] z-50 flex flex-col backdrop-blur-xl"
                           >
-                              <Flame size={16} />
-                              <div className="flex-1">
-                                  <div className="font-bold text-xs">ROAST / SKULL</div>
-                                  <div className="text-[10px] opacity-60">Toxic & Savage</div>
+                              <div className="px-4 py-3 text-[10px] text-gray-500 font-orbitron tracking-widest border-b border-white/10 bg-white/5">
+                                  PERSONALITY MATRIX
                               </div>
-                              {astraMode === 'skull' && (
-                                  <div className="flex gap-1 items-center">
-                                      <button 
-                                        onClick={(e) => { e.stopPropagation(); const next = skullIntensity === 'normal' ? 'nuclear' : 'normal'; switchProtocol('skull', next); }}
-                                        className={`px-1.5 py-0.5 rounded text-[8px] border ${skullIntensity === 'nuclear' ? 'bg-red-500 text-white border-red-500' : 'border-red-500/50 text-red-500 hover:bg-red-500/10'}`}
-                                      >
-                                          {skullIntensity === 'nuclear' ? 'NUCLEAR' : 'NORMAL'}
-                                      </button>
-                                      <motion.div layoutId="active-dot" className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                              
+                              <motion.button 
+                                 whileHover={{ backgroundColor: "rgba(255,255,255,0.05)", x: 4 }}
+                                 onClick={() => { switchProtocol('shield'); setPersonalityMenuOpen(false); }}
+                                 className={`flex items-center gap-3 px-4 py-3 transition-colors text-left border-b border-white/5 w-full ${astraMode === 'shield' ? 'text-astra-blue' : 'text-gray-400'}`}
+                              >
+                                  <Shield size={16} />
+                                  <div className="flex-1">
+                                      <div className="font-bold text-xs">SHIELD</div>
+                                      <div className="text-[10px] opacity-60">Standard Defense</div>
                                   </div>
-                              )}
+                                  {astraMode === 'shield' && (
+                                      <motion.div layoutId="active-dot" className="w-1.5 h-1.5 rounded-full bg-astra-blue" />
+                                  )}
+                              </motion.button>
+
+                              <motion.div 
+                                 whileHover={{ backgroundColor: "rgba(239, 68, 68, 0.1)", x: 4 }}
+                                 onClick={() => { switchProtocol('skull'); setPersonalityMenuOpen(false); }}
+                                 className={`flex items-center gap-3 px-4 py-3 transition-colors text-left border-b border-white/5 w-full cursor-pointer ${astraMode === 'skull' ? 'text-red-500' : 'text-gray-400'}`}
+                              >
+                                  <Flame size={16} />
+                                  <div className="flex-1">
+                                      <div className="font-bold text-xs">ROAST / SKULL</div>
+                                      <div className="text-[10px] opacity-60">Toxic & Savage</div>
+                                  </div>
+                                  {astraMode === 'skull' && (
+                                      <div className="flex gap-1 items-center">
+                                          <button 
+                                            onClick={(e) => { e.stopPropagation(); const next = skullIntensity === 'normal' ? 'nuclear' : 'normal'; switchProtocol('skull', next); }}
+                                            className={`px-1.5 py-0.5 rounded text-[8px] border ${skullIntensity === 'nuclear' ? 'bg-red-500 text-white border-red-500' : 'border-red-500/50 text-red-500 hover:bg-red-500/10'}`}
+                                          >
+                                              {skullIntensity === 'nuclear' ? 'NUCLEAR' : 'NORMAL'}
+                                          </button>
+                                          <motion.div layoutId="active-dot" className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                      </div>
+                                  )}
+                              </motion.div>
+
+                              <motion.button 
+                                 whileHover={{ backgroundColor: "rgba(34, 197, 94, 0.1)", x: 4 }}
+                                 onClick={() => { switchProtocol('root'); setPersonalityMenuOpen(false); }}
+                                 className={`flex items-center gap-3 px-4 py-3 transition-colors text-left w-full ${astraMode === 'root' ? 'text-green-500' : 'text-gray-400'}`}
+                              >
+                                  <Terminal size={16} />
+                                  <div className="flex-1">
+                                      <div className="font-bold text-xs">ROOT SHELL</div>
+                                      <div className="text-[10px] opacity-60">Hacker CLI</div>
+                                  </div>
+                                  {astraMode === 'root' && (
+                                      <motion.div layoutId="active-dot" className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                  )}
+                              </motion.button>
                           </motion.div>
-
-                          <motion.button 
-                             whileHover={{ backgroundColor: "rgba(34, 197, 94, 0.1)", x: 4 }}
-                             onClick={() => { switchProtocol('root'); setPersonalityMenuOpen(false); }}
-                             className={`flex items-center gap-3 px-4 py-3 transition-colors text-left w-full ${astraMode === 'root' ? 'text-green-500' : 'text-gray-400'}`}
-                          >
-                              <Terminal size={16} />
-                              <div className="flex-1">
-                                  <div className="font-bold text-xs">ROOT SHELL</div>
-                                  <div className="text-[10px] opacity-60">Hacker CLI</div>
-                              </div>
-                              {astraMode === 'root' && (
-                                  <motion.div layoutId="active-dot" className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                              )}
-                          </motion.button>
-                      </motion.div>
-                  )}
-               </AnimatePresence>
-            </div>
-            
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              className={`p-3 rounded-xl transition-colors ${astraMode === 'root' ? 'border border-green-500 text-green-500 hover:bg-green-500/20' : 'bg-white/5 text-gray-400 hover:text-astra-blue hover:bg-white/10'}`}
-            >
-                <Paperclip size={20} />
-            </button>
-
-            <Tooltip content={isTranscribing ? "RECORDING..." : "TRANSCRIBE AUDIO"} position="top">
+                      )}
+                   </AnimatePresence>
+                </div>
+                
                 <button 
-                  onClick={handleTranscription}
-                  className={`p-3 rounded-xl transition-all ${isTranscribing ? 'bg-red-500 text-white animate-pulse' : astraMode === 'root' ? 'border border-green-500 text-green-500 hover:bg-green-500/20' : 'bg-white/5 text-gray-400 hover:text-astra-blue hover:bg-white/10'}`}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`p-3 rounded-xl transition-colors shrink-0 ${astraMode === 'root' ? 'border border-green-500 text-green-500 hover:bg-green-500/20' : 'bg-white/5 text-gray-400 hover:text-astra-blue hover:bg-white/10'}`}
                 >
-                    <Mic size={20} />
+                    <Paperclip size={20} />
                 </button>
-            </Tooltip>
-            
-            <button
-               onClick={toggleLiveSession}
-               className={`p-3 rounded-xl transition-all relative ${isLiveMode ? 'bg-red-500 text-white animate-pulse' : astraMode === 'root' ? 'border border-green-500 text-green-500 hover:bg-green-500/20' : 'bg-white/5 text-gray-400 hover:text-astra-blue hover:bg-white/10'}`}
-            >
-                {isLiveMode ? <StopCircle size={20} /> : <Radio size={20} />}
-            </button>
 
-             {/* DEEP THINK TOGGLE BUTTON */}
-             <Tooltip content={genMode === 'DEEP_THINK' ? "DEEP THINKING ACTIVE" : "ENABLE DEEP REASONING"} position="top">
+                <Tooltip content={isTranscribing ? "RECORDING..." : "TRANSCRIBE AUDIO"} position="top">
+                    <button 
+                      onClick={handleTranscription}
+                      className={`p-3 rounded-xl transition-all shrink-0 ${isTranscribing ? 'bg-red-500 text-white animate-pulse' : astraMode === 'root' ? 'border border-green-500 text-green-500 hover:bg-green-500/20' : 'bg-white/5 text-gray-400 hover:text-astra-blue hover:bg-white/10'}`}
+                    >
+                        <Mic size={20} />
+                    </button>
+                </Tooltip>
+                
+                <Tooltip content={screenStream ? "STOP SCREEN SHARE" : "SHARE SCREEN"} position="top">
+                    <button 
+                      onClick={toggleScreenShare}
+                      className={`p-3 rounded-xl transition-all shrink-0 ${screenStream ? 'bg-astra-blue text-black shadow-[0_0_10px_rgba(0,240,255,0.5)]' : astraMode === 'root' ? 'border border-green-500 text-green-500 hover:bg-green-500/20' : 'bg-white/5 text-gray-400 hover:text-astra-blue hover:bg-white/10'}`}
+                    >
+                        <MonitorUp size={20} />
+                    </button>
+                </Tooltip>
+
                 <button
-                    onClick={() => switchGenMode(genMode === 'DEEP_THINK' ? 'CHAT' : 'DEEP_THINK')}
-                    className={`p-3 rounded-xl transition-all relative ${
-                        genMode === 'DEEP_THINK' 
-                        ? 'bg-purple-600 text-white shadow-[0_0_15px_rgba(147,51,234,0.5)]' 
-                        : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
-                    }`}
+                   onClick={toggleLiveSession}
+                   className={`p-3 rounded-xl transition-all relative shrink-0 ${isLiveMode ? 'bg-red-500 text-white animate-pulse' : astraMode === 'root' ? 'border border-green-500 text-green-500 hover:bg-green-500/20' : 'bg-white/5 text-gray-400 hover:text-astra-blue hover:bg-white/10'}`}
                 >
-                    {genMode === 'DEEP_THINK' ? <BrainCircuit size={20} className="animate-pulse" /> : <Zap size={20} />}
+                    {isLiveMode ? <StopCircle size={20} /> : <Radio size={20} />}
                 </button>
-            </Tooltip>
+
+                 {/* DEEP THINK TOGGLE BUTTON */}
+                 <Tooltip content={genMode === 'DEEP_THINK' ? "DEEP THINKING ACTIVE" : "ENABLE DEEP REASONING"} position="top">
+                    <button
+                        onClick={() => switchGenMode(genMode === 'DEEP_THINK' ? 'CHAT' : 'DEEP_THINK')}
+                        className={`p-3 rounded-xl transition-all relative shrink-0 ${
+                            genMode === 'DEEP_THINK' 
+                            ? 'bg-purple-600 text-white shadow-[0_0_15px_rgba(147,51,234,0.5)]' 
+                            : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
+                        }`}
+                    >
+                        {genMode === 'DEEP_THINK' ? <BrainCircuit size={20} className="animate-pulse" /> : <Zap size={20} />}
+                    </button>
+                </Tooltip>
+            </div>
 
             <motion.div 
               animate={{ 
                   borderColor: isInputFocused 
-                      ? (astraMode === 'root' ? '#22c55e' : (astraMode === 'skull' ? '#ef4444' : 'rgba(0, 240, 255, 0.5)')) 
-                      : (astraMode === 'root' ? '#15803d' : 'rgba(255, 255, 255, 0.05)'),
+                      ? (astraMode === 'root' ? '#22c55e' : (astraMode === 'skull' ? '#ef4444' : 'rgba(0, 240, 255, 0.8)')) 
+                      : (astraMode === 'root' ? '#15803d' : 'rgba(255, 255, 255, 0.1)'),
                   boxShadow: isInputFocused 
-                      ? (astraMode === 'root' ? '0 0 10px rgba(34, 197, 94, 0.3)' : (astraMode === 'skull' ? '0 0 10px rgba(239, 68, 68, 0.3)' : '0 0 15px rgba(0, 240, 255, 0.2)'))
+                      ? (astraMode === 'root' ? '0 0 15px rgba(34, 197, 94, 0.4)' : (astraMode === 'skull' ? '0 0 15px rgba(239, 68, 68, 0.4)' : '0 0 20px rgba(0, 240, 255, 0.3)'))
                       : 'none',
-                  scale: isInputFocused ? 1.01 : 1
+                  scale: isInputFocused ? 1.02 : 1,
+                  y: isInputFocused ? -2 : 0
               }}
-              transition={{ duration: 0.2 }}
-              className={`flex-1 flex items-center gap-2 p-3 rounded-xl border ${astraMode === 'root' ? 'bg-black' : 'bg-white/5'}`}
+              transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
+              className={`flex-1 min-w-[250px] flex items-center gap-2 p-3 rounded-xl border ${astraMode === 'root' ? 'bg-black' : 'bg-black/40 backdrop-blur-md'}`}
             >
                 {astraMode === 'root' && <span className="text-green-500 font-terminal mr-1">{'>'}</span>}
                 <textarea
@@ -1257,17 +1451,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ onBack }) => {
                 />
             </motion.div>
 
-            <button 
+            <motion.button 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={handleSend}
               disabled={isLoading || (!input.trim() && !attachment)}
               className={`p-3 rounded-xl transition-all disabled:opacity-50 ${
                   astraMode === 'root' 
-                  ? 'bg-green-600 text-black hover:bg-green-500' 
-                  : 'bg-astra-blue text-black hover:bg-astra-blue/80 shadow-[0_0_15px_rgba(0,240,255,0.3)]'
+                  ? 'bg-green-600 text-black hover:bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.4)]' 
+                  : 'bg-astra-blue text-black hover:bg-astra-blue/80 shadow-[0_0_20px_rgba(0,240,255,0.4)]'
               }`}
             >
-                <Send size={20} />
-            </button>
+                <Send size={20} className={(!input.trim() && !attachment) ? '' : 'animate-pulse'} />
+            </motion.button>
          </div>
       </div>
 

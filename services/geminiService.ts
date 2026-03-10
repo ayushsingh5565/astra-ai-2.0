@@ -3,7 +3,8 @@ import { GoogleGenAI, Chat, GenerateContentResponse, Content, Tool, LiveServerMe
 import { 
   ASTRA_SHIELD_INSTRUCTION, 
   ASTRA_SKULL_INSTRUCTION, 
-  ASTRA_ROOT_INSTRUCTION 
+  ASTRA_ROOT_INSTRUCTION,
+  QUIZ_HACKER_PROMPT
 } from '../constants';
 import { Attachment, GenerationMode, AstraMode, VoiceProfile, GroundingMetadata } from '../types';
 
@@ -37,15 +38,15 @@ const getModelConfig = (genMode: GenerationMode, astraMode: AstraMode) => {
   switch (genMode) {
     case 'DEEP_THINK':
       return {
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-3.1-pro-preview',
         config: {
           systemInstruction,
-          thinkingConfig: { thinkingBudget: 32768 }
+          // Deep thinking behavior is automatic, but we can explicitly request high reasoning
         }
       };
     case 'WEB_INTEL':
       return {
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.1-pro-preview',
         config: {
           systemInstruction,
           tools: [{ googleSearch: {} } as Tool]
@@ -53,7 +54,7 @@ const getModelConfig = (genMode: GenerationMode, astraMode: AstraMode) => {
       };
     case 'SPEED_RUN':
       return {
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.1-flash-lite-preview',
         config: {
           systemInstruction,
           temperature: 0.7
@@ -64,7 +65,8 @@ const getModelConfig = (genMode: GenerationMode, astraMode: AstraMode) => {
              model: 'gemini-3.1-pro-preview',
              config: { 
                  systemInstruction: "You are ASTRA CODER. Expert Architect. Provide production-ready code. DO NOT CITE SOURCES.",
-                 temperature: 0.2 
+                 temperature: 0.2,
+                 tools: [{ codeExecution: {} } as Tool]
              }
         };
     case 'ASTRA_AGENT':
@@ -89,12 +91,13 @@ const getModelConfig = (genMode: GenerationMode, astraMode: AstraMode) => {
                  [COMPLETION_REPORT]
                  - (Final summary of work done)
                  `,
-                 temperature: 0.3 
+                 temperature: 0.3,
+                 tools: [{ googleSearch: {} } as Tool, { codeExecution: {} } as Tool]
              }
         };
     case 'IMAGE_EDIT': 
         return {
-            model: 'gemini-2.5-flash-image',
+            model: 'gemini-3.1-flash-image-preview',
             config: { systemInstruction }
         };
     case 'ASTRA_DETECTION':
@@ -103,10 +106,18 @@ const getModelConfig = (genMode: GenerationMode, astraMode: AstraMode) => {
             model: 'gemini-3.1-pro-preview',
             config: { systemInstruction }
          };
+    case 'QUIZ_HACKER':
+         return {
+            model: 'gemini-3.1-pro-preview',
+            config: { 
+                systemInstruction: systemInstruction + "\n\n" + QUIZ_HACKER_PROMPT,
+                temperature: 0.1
+            }
+         };
     case 'CHAT':
     default:
       return {
-        model: 'gemini-2.5-flash',
+        model: astraMode === 'skull' ? 'gemini-3.1-flash-lite-preview' : 'gemini-3-flash-preview',
         config: {
           systemInstruction,
           temperature: astraMode === 'root' ? 0.2 : 0.9,
@@ -521,14 +532,32 @@ export class AstraLiveSession {
   private analyser: AnalyserNode | null = null;
   private nextStartTime = 0;
   private astraMode: AstraMode;
+  private genMode: GenerationMode;
   private currentSession: any = null;
 
-  constructor(mode: AstraMode) { this.astraMode = mode; }
+  private videoStream: MediaStream | null = null;
+  private videoElement: HTMLVideoElement | null = null;
+  private canvasElement: HTMLCanvasElement | null = null;
+  private videoInterval: number | null = null;
+
+  constructor(mode: AstraMode, genMode: GenerationMode, videoStream?: MediaStream | null) { 
+      this.astraMode = mode; 
+      this.genMode = genMode;
+      this.videoStream = videoStream || null;
+  }
 
   async start(onClose: () => void) {
     this.inputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
     this.outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-    const systemInstruction = getSystemPrompt(this.astraMode);
+    let systemInstruction = getSystemPrompt(this.astraMode);
+    
+    if (this.genMode === 'QUIZ_HACKER') {
+        systemInstruction += "\n\n" + QUIZ_HACKER_PROMPT;
+    }
+
+    if (this.astraMode === 'skull') {
+        systemInstruction += "\n\n[LIVE_MODE_OVERRIDE]: You are in a LIVE voice session. Be extremely fast, aggressive, and toxic. Interrupt the user if they talk too much. Use Hinglish slang. Don't let them finish their sentence if it's stupid. Make them cry with your words.";
+    }
     
     let voiceName = 'Kore';
     if (this.astraMode === 'skull') voiceName = Math.random() > 0.5 ? 'Puck' : 'Charon';
@@ -597,6 +626,45 @@ export class AstraLiveSession {
         };
         this.source.connect(this.processor);
         this.processor.connect(this.inputAudioContext.destination);
+
+        // --- VIDEO STREAMING ---
+        if (this.videoStream) {
+            this.videoElement = document.createElement('video');
+            this.videoElement.srcObject = this.videoStream;
+            this.videoElement.muted = true;
+            await this.videoElement.play();
+            
+            this.canvasElement = document.createElement('canvas');
+            
+            // Send frames at 1 fps
+            this.videoInterval = window.setInterval(() => {
+                if (this.currentSession && this.videoElement && this.canvasElement) {
+                    const maxDim = 720;
+                    let width = this.videoElement.videoWidth;
+                    let height = this.videoElement.videoHeight;
+                    
+                    if (width === 0 || height === 0) return;
+
+                    if (width > maxDim || height > maxDim) {
+                        const ratio = Math.min(maxDim / width, maxDim / height);
+                        width = Math.round(width * ratio);
+                        height = Math.round(height * ratio);
+                    }
+
+                    this.canvasElement.width = width;
+                    this.canvasElement.height = height;
+                    
+                    const ctx = this.canvasElement.getContext('2d');
+                    if (ctx) {
+                        ctx.drawImage(this.videoElement, 0, 0, width, height);
+                        const dataUrl = this.canvasElement.toDataURL('image/jpeg', 0.5);
+                        const base64 = dataUrl.split(',')[1];
+                        this.currentSession.sendRealtimeInput({ media: { mimeType: 'image/jpeg', data: base64 } });
+                    }
+                }
+            }, 1000);
+        }
+
       } catch (e) {
           console.error("Error starting recording:", e);
           this.stop();
@@ -634,6 +702,17 @@ export class AstraLiveSession {
           }
           this.currentSession = null;
       }
+
+      if (this.videoInterval) {
+          window.clearInterval(this.videoInterval);
+          this.videoInterval = null;
+      }
+      if (this.videoElement) {
+          this.videoElement.pause();
+          this.videoElement.srcObject = null;
+          this.videoElement = null;
+      }
+      this.canvasElement = null;
 
       this.processor?.disconnect();
       this.source?.disconnect();

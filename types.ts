@@ -48,7 +48,6 @@ export type GenerationMode =
   | 'CHAT' 
   | 'DEEP_THINK' 
   | 'WEB_INTEL' 
-  | 'SPEED_RUN' 
   | 'IMAGE_EDIT' 
   | 'ASTRA_DETECTION' 
   | 'VOICE_DETECTOR'

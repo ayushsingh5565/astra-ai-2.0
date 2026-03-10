@@ -59,6 +59,24 @@ export const CyberBackground: React.FC<CyberBackgroundProps> = ({ mode, isProces
       }
       ctx.stroke();
 
+      // Floating Data Particles (Optimized)
+      const time = Date.now() * 0.0005;
+      ctx.fillStyle = `rgba(${baseColor}, 0.1)`;
+      for (let i = 0; i < 15; i++) {
+        const x = ((Math.sin(time + i * 1.5) * 0.5 + 0.5) * width);
+        const y = ((Math.cos(time * 0.8 + i) * 0.5 + 0.5) * height);
+        const size = 2;
+        
+        ctx.fillRect(x, y, size, size);
+        
+        // Subtle scanline effect
+        if (i % 5 === 0) {
+          ctx.fillStyle = `rgba(${baseColor}, 0.02)`;
+          ctx.fillRect(0, y, width, 1);
+          ctx.fillStyle = `rgba(${baseColor}, 0.1)`;
+        }
+      }
+
       // Pulse fade
       if (pulseRef.current > 0) {
         pulseRef.current *= 0.95;
